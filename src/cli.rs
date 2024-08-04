@@ -1,3 +1,4 @@
+use std::fs;
 use anyhow::Result;
 use clap::Parser;
 use regex::Regex;
@@ -21,6 +22,6 @@ pub fn run() -> Result<()> {
     let args = Args::parse();
     let regex_string = format!(r"({})", args.regex);
     let regex = Regex::new(&regex_string)?;
-
+ 
     grep::call(args.recursive, args.dir, regex)
 }

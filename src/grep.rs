@@ -1,6 +1,7 @@
 use std::{fs, thread};
 use std::fmt::{Display, Formatter};
-use std::fs::{read_to_string};
+use std::fs::{File, read_to_string};
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
@@ -26,6 +27,15 @@ impl Display for GrepOutput {
         let colored_line_number = format!("{:>2}", self.line_number.to_string()).blue();
         write!(f, "{}: {}: {}", colored_filename, colored_line_number, self.matched_string)
     }
+}
+
+fn is_binary<P: AsRef<Path>>(path: P) -> std::io::Result<bool> {
+    let mut file = File::open(path)?;
+    let mut buffer = Vec::new();
+
+    file.read_to_end(&mut buffer)?;
+
+    Ok(buffer.iter().any(|&byte| byte < 0x09 || (0x0E <= byte && byte <= 0x1F)))
 }
 
 fn send_filepath<P>(sender: Sender<PathBuf>, dir_path: P, recursive: bool) -> Result<()>
@@ -69,6 +79,7 @@ where
     P: AsRef<Path>,
 {
     let filename = path.as_ref().display().to_string();
+
     let content = read_to_string(path)?;
 
     for (line, line_str) in content.lines().enumerate() {
@@ -86,6 +97,9 @@ where
 
 fn grep_received_filepath(receiver: Receiver<PathBuf>, regex: &Regex) -> Result<()> {
     for pathbuf in receiver {
+        if is_binary(&pathbuf)? {
+            continue;
+        }
         grep_file_content(pathbuf, regex)?;
     }
 
