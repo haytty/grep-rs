@@ -29,7 +29,7 @@ impl Display for GrepOutput {
     }
 }
 
-fn is_binary<P: AsRef<Path>>(path: P) -> std::io::Result<bool> {
+fn is_binary<P: AsRef<Path>>(path: P) -> Result<bool> {
     let mut file = File::open(path)?;
     let mut buffer = Vec::new();
 
